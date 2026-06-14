@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prédiction de Mots — Apriori</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f1117;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+            padding: 24px;
+        }
+
+        .logo {
+            font-size: 36px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            text-align: center;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 32px;
+            letter-spacing: 0.5px;
+        }
+
+        .search-card {
+            width: 100%;
+            max-width: 680px;
+            background: #1e2130;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid #2d3550;
+        }
+
+        .input-wrap {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 90px;
+            padding: 16px 48px 16px 16px;
+            font-size: 17px;
+            line-height: 1.5;
+            background: #0f1117;
+            border: 2px solid #2d3550;
+            border-radius: 14px;
+            color: #e2e8f0;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            border-color: #4f8ef7;
+            box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+        }
+
+        textarea::placeholder { color: #475569; }
+
+        #clear-btn {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            background: #2d3550;
+            border: none;
+            color: #8892a4;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        #clear-btn:hover { background: #374163; color: #e2e8f0; }
+
+        /* ── Suggestions ───────────────────────────────────────── */
+        .suggestions-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+
+        #suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 44px;
+        }
+
+        .chip {
+            background: #0f1117;
+            border: 1px solid #2d3550;
+            color: #93c5fd;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }
+
+        .chip:hover {
+            background: #1e3a5f;
+            border-color: #4f8ef7;
+            color: #e2e8f0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79,142,247,0.2);
+        }
+
+        .chip .rank {
+            font-size: 10px;
+            background: #1e3a5f;
+            color: #93c5fd;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .chip-empty {
+            color: #475569;
+            font-size: 13px;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
+        .chip-loading {
+            color: #64748b;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid #2d3550;
+            border-top-color: #4f8ef7;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Divider ───────────────────────────────────────────── */
+        .divider {
+            border: none;
+            border-top: 1px solid #2d3550;
+            margin: 20px 0;
+        }
+
+        /* ── Raccourcis ────────────────────────────────────────── */
+        .shortcuts-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+        }
+
+        .shortcuts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .shortcut {
+            background: #161b2e;
+            border: 1px solid #2d3550;
+            color: #64748b;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .shortcut:hover {
+            border-color: #4f8ef7;
+            color: #93c5fd;
+        }
+
+        /* ── Stats bar ─────────────────────────────────────────── */
+        .stats-bar {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4f8ef7;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Footer ────────────────────────────────────────────── */
+        .footer {
+            margin-top: 24px;
+            font-size: 11px;
+            color: #374163;
+            text-align: center;
+        }
+
+        .err {
+            color: #f87171;
+            font-size: 13px;
+            padding: 8px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="logo">🧠</div>
+<h1>Prédiction de Mots</h1>
+<p class="subtitle">Algorithme Apriori · Règles d'association séquentielles · Français</p>
+
+<div class="search-card">
+
+    <div class="input-wrap">
+        <textarea id="search"
+                  placeholder="Tapez une phrase en français… (ex: je ne sais)"
+                  autocomplete="off" spellcheck="false"></textarea>
+        <button id="clear-btn" title="Effacer">✕</button>
+    </div>
+
+    <div class="suggestions-label">Mots suggérés</div>
+    <div id="suggestions">
+        <span class="chip-empty">Commencez à taper…</span>
+    </div>
+
+    <hr class="divider">
+
+    <div class="shortcuts-label">Exemples rapides</div>
+    <div class="shortcuts" id="shortcuts">
+        <span class="shortcut" onclick="setTexte('je ne')">je ne</span>
+        <span class="shortcut" onclick="setTexte('tu')">tu</span>
+        <span class="shortcut" onclick="setTexte('il')">il</span>
+        <span class="shortcut" onclick="setTexte('je pense')">je pense</span>
+        <span class="shortcut" onclick="setTexte('je ne sais')">je ne sais</span>
+        <span class="shortcut" onclick="setTexte('c\'est')">c'est</span>
+        <span class="shortcut" onclick="setTexte('nous')">nous</span>
+        <span class="shortcut" onclick="setTexte('il faut')">il faut</span>
+        <span class="shortcut" onclick="setTexte('je veux')">je veux</span>
+        <span class="shortcut" onclick="setTexte('elle')">elle</span>
+    </div>
+
+</div>
+
+<div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat">
+        <div class="stat-value" id="stat-regles">—</div>
+        <div class="stat-label">Règles</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" id="stat-algo">Apriori</div>
+        <div class="stat-label">Algorithme</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" id="stat-conf">10%</div>
+        <div class="stat-label">Confiance min.</div>
+    </div>
+</div>
+
+<div class="footer">
+    Powered by Apriori — bigrammes &amp; trigrammes ordonnés
+</div>
+
+<script>
+const textarea  = document.getElementById('search');
+const sugDiv    = document.getElementById('suggestions');
+const clearBtn  = document.getElementById('clear-btn');
+let   debounce;
+
+// Charger les stats au démarrage
+fetch('/api/stats')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('stat-regles').textContent = data.nombreRegles.toLocaleString('fr');
+        document.getElementById('stats-bar').style.display = 'flex';
+    })
+    .catch(() => {});
+
+function setTexte(txt) {
+    textarea.value = txt;
+    textarea.focus();
+    textarea.dispatchEvent(new Event('input'));
+}
+
+function afficherLoading() {
+    sugDiv.innerHTML = `<span class="chip-loading"><div class="spinner"></div>Analyse…</span>`;
+}
+
+function afficherVide() {
+    sugDiv.innerHTML = `<span class="chip-empty">Aucune suggestion pour ce texte</span>`;
+}
+
+function afficherSuggestions(mots) {
+    if (!mots || mots.length === 0) { afficherVide(); return; }
+    sugDiv.innerHTML = '';
+    mots.forEach((mot, i) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `<span class="rank">${i+1}</span> ${mot}`;
+        chip.title = `Cliquer pour ajouter "${mot}"`;
+        chip.addEventListener('click', () => ajouterMot(mot));
+        sugDiv.appendChild(chip);
+    });
+}
+
+function ajouterMot(mot) {
+    const val = textarea.value.trimEnd();
+    textarea.value = val + (val ? ' ' : '') + mot + ' ';
+    textarea.focus();
+    textarea.dispatchEvent(new Event('input'));
+}
+
+textarea.addEventListener('input', () => {
+    const texte = textarea.value;
+    clearBtn.style.display = texte.length > 0 ? 'flex' : 'none';
+
+    clearTimeout(debounce);
+
+    if (texte.trim().length === 0) {
+        sugDiv.innerHTML = `<span class="chip-empty">Commencez à taper…</span>`;
+        return;
+    }
+
+    afficherLoading();
+
+    debounce = setTimeout(async () => {
+        try {
+            const res = await fetch('/api/predict?texte=' + encodeURIComponent(texte.trim()));
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            afficherSuggestions(data);
+        } catch (err) {
+            sugDiv.innerHTML = `<span class="err">⚠️ Erreur : ${err.message}. Serveur démarré ?</span>`;
+        }
+    }, 200);
+});
+
+clearBtn.addEventListener('click', () => {
+    textarea.value = '';
+    clearBtn.style.display = 'none';
+    sugDiv.innerHTML = `<span class="chip-empty">Commencez à taper…</span>`;
+    textarea.focus();
+});
+
+// Raccourci clavier : Tab sur le textarea insère la 1ère suggestion
+textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+        const premier = sugDiv.querySelector('.chip');
+        if (premier) {
+            e.preventDefault();
+            const mot = premier.textContent.replace(/^\d/, '').trim();
+            ajouterMot(mot);
+        }
+    }
+});
+</script>
+
+</body>
+</html>
