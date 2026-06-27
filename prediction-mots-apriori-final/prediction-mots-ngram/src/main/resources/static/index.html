@@ -5,191 +5,261 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prédiction de Mots — Apriori</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0f1117;
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            background: linear-gradient(135deg, #8B6F47 0%, #A0826D 50%, #8B7355 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: #e2e8f0;
+            color: #D4A574;
             padding: 24px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .logo {
-            font-size: 36px;
-            margin-bottom: 8px;
-            text-align: center;
+        /* Vintage paper texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
         }
 
         h1 {
-            font-size: 22px;
-            font-weight: 600;
+            font-size: 32px;
+            font-weight: 700;
             text-align: center;
-            color: #e2e8f0;
+            color: #2C1810;
             margin-bottom: 4px;
+            text-shadow: 1px 1px 0px #D4A574;
+            letter-spacing: 2px;
         }
 
         .subtitle {
-            font-size: 12px;
-            color: #64748b;
+            font-size: 13px;
+            color: #5C4033;
             text-align: center;
             margin-bottom: 32px;
-            letter-spacing: 0.5px;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .search-card {
             width: 100%;
             max-width: 680px;
-            background: #1e2130;
-            border-radius: 20px;
-            padding: 28px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            border: 1px solid #2d3550;
+            background: linear-gradient(180deg, #C9B59A 0%, #B8976B 100%);
+            border-radius: 0;
+            padding: 32px;
+            box-shadow: 
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                inset 0 -1px 0 rgba(0,0,0,0.2),
+                0 8px 24px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .search-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.02) 1px, rgba(0,0,0,.02) 2px),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.02) 1px, rgba(0,0,0,.02) 2px);
+            border-radius: 0;
+            pointer-events: none;
+        }
+
+        .search-card > * {
+            position: relative;
+            z-index: 1;
         }
 
         .input-wrap {
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         textarea {
             width: 100%;
-            min-height: 90px;
-            padding: 16px 48px 16px 16px;
-            font-size: 17px;
-            line-height: 1.5;
-            background: #0f1117;
-            border: 2px solid #2d3550;
-            border-radius: 14px;
-            color: #e2e8f0;
+            min-height: 100px;
+            padding: 14px;
+            font-size: 16px;
+            line-height: 1.6;
+            background: #E8D7C3;
+            border: none;
+            border-radius: 0;
+            color: #2C1810;
             resize: none;
             outline: none;
-            transition: border-color 0.2s;
-            font-family: inherit;
+            transition: background 0.2s;
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         textarea:focus {
-            border-color: #4f8ef7;
-            box-shadow: 0 0 0 3px rgba(79,142,247,0.12);
+            background: #F0E4D8;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 0 0 2px #8B4513;
         }
 
-        textarea::placeholder { color: #475569; }
+        textarea::placeholder { 
+            color: #8B6F47;
+        }
 
         #clear-btn {
             position: absolute;
             top: 12px;
-            right: 14px;
-            background: #2d3550;
+            right: 12px;
+            background: #8B4513;
             border: none;
-            color: #8892a4;
-            font-size: 16px;
+            color: #F0E4D8;
+            font-size: 18px;
             cursor: pointer;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
+            border-radius: 0;
+            width: 32px;
+            height: 32px;
             display: none;
             align-items: center;
             justify-content: center;
-            transition: background 0.15s;
+            transition: all 0.15s;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        #clear-btn:hover { background: #374163; color: #e2e8f0; }
+
+        #clear-btn:hover { 
+            background: #6B3410;
+            transform: scale(1.05);
+        }
+
+        #clear-btn:active {
+            transform: scale(0.95);
+        }
 
         /* ── Suggestions ───────────────────────────────────────── */
         .suggestions-label {
-            font-size: 11px;
-            color: #64748b;
+            font-size: 12px;
+            color: #2C1810;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 10px;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 700;
         }
 
         #suggestions {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            min-height: 44px;
+            gap: 10px;
+            min-height: 48px;
         }
 
         .chip {
-            background: #0f1117;
-            border: 1px solid #2d3550;
-            color: #93c5fd;
+            background: linear-gradient(180deg, #D4A574 0%, #C19A6B 100%);
+            border: none;
+            color: #2C1810;
             padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 15px;
+            border-radius: 0;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.15s;
             display: flex;
             align-items: center;
-            gap: 6px;
-            animation: fadeIn 0.2s ease;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+            font-weight: 600;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            letter-spacing: 0.5px;
         }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:none } }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(-4px) } 
+            to { opacity: 1; transform: none } 
+        }
 
         .chip:hover {
-            background: #1e3a5f;
-            border-color: #4f8ef7;
-            color: #e2e8f0;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(79,142,247,0.2);
+            background: linear-gradient(180deg, #E8D7C3 0%, #D4A574 100%);
+            color: #8B4513;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+        }
+
+        .chip:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .chip .rank {
-            font-size: 10px;
-            background: #1e3a5f;
-            color: #93c5fd;
-            width: 18px;
-            height: 18px;
+            font-size: 11px;
+            background: #8B4513;
+            color: #F0E4D8;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .chip-empty {
-            color: #475569;
-            font-size: 13px;
+            color: #5C4033;
+            font-size: 14px;
             font-style: italic;
             padding: 8px 0;
         }
 
         .chip-loading {
-            color: #64748b;
-            font-size: 13px;
+            color: #5C4033;
+            font-size: 14px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .spinner {
-            width: 16px; height: 16px;
-            border: 2px solid #2d3550;
-            border-top-color: #4f8ef7;
+            width: 18px; 
+            height: 18px;
+            border: 3px solid #C9B59A;
+            border-top-color: #8B4513;
             border-radius: 50%;
-            animation: spin 0.6s linear infinite;
+            animation: spin 0.8s linear infinite;
             flex-shrink: 0;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
 
         /* ── Divider ───────────────────────────────────────────── */
         .divider {
             border: none;
-            border-top: 1px solid #2d3550;
-            margin: 20px 0;
+            border-top: 2px solid rgba(0,0,0,0.1);
+            margin: 24px 0;
         }
 
         /* ── Raccourcis ────────────────────────────────────────── */
         .shortcuts-label {
-            font-size: 11px;
-            color: #64748b;
+            font-size: 12px;
+            color: #2C1810;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 10px;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            font-weight: 700;
         }
 
         .shortcuts {
@@ -199,26 +269,39 @@
         }
 
         .shortcut {
-            background: #161b2e;
-            border: 1px solid #2d3550;
-            color: #64748b;
-            padding: 5px 12px;
-            border-radius: 12px;
-            font-size: 12px;
+            background: #A0826D;
+            border: none;
+            color: #F0E4D8;
+            padding: 6px 14px;
+            border-radius: 0;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.15s;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            letter-spacing: 0.5px;
         }
+
         .shortcut:hover {
-            border-color: #4f8ef7;
-            color: #93c5fd;
+            background: #8B6F47;
+            color: #F0E4D8;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .shortcut:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
         /* ── Stats bar ─────────────────────────────────────────── */
         .stats-bar {
-            margin-top: 20px;
+            margin-top: 28px;
             display: flex;
             justify-content: center;
-            gap: 24px;
+            gap: 32px;
+            padding: 16px 0;
         }
 
         .stat {
@@ -226,88 +309,120 @@
         }
 
         .stat-value {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 700;
-            color: #4f8ef7;
+            color: #8B4513;
+            letter-spacing: 1px;
         }
 
         .stat-label {
-            font-size: 10px;
-            color: #64748b;
+            font-size: 11px;
+            color: #2C1810;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            font-weight: 700;
         }
 
         /* ── Footer ────────────────────────────────────────────── */
         .footer {
-            margin-top: 24px;
-            font-size: 11px;
-            color: #374163;
+            margin-top: 28px;
+            font-size: 12px;
+            color: #5C4033;
             text-align: center;
+            letter-spacing: 1px;
+            font-weight: 600;
         }
 
         .err {
-            color: #f87171;
+            color: #8B4513;
             font-size: 13px;
             padding: 8px 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .err svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 24px;
+            }
+
+            .search-card {
+                padding: 24px;
+            }
+
+            .stats-bar {
+                gap: 20px;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="logo">🧠</div>
-<h1>Prédiction de Mots</h1>
-<p class="subtitle">Algorithme Apriori · Règles d'association séquentielles · Français</p>
+<div class="container">
+    
+    <h1>PRÉDICTION DE MOTS</h1>
+    <p class="subtitle">Apriori · Règles d'Association · Français</p>
 
-<div class="search-card">
+    <div class="search-card">
 
-    <div class="input-wrap">
-        <textarea id="search"
-                  placeholder="Tapez une phrase en français… (ex: je ne sais)"
-                  autocomplete="off" spellcheck="false"></textarea>
-        <button id="clear-btn" title="Effacer">✕</button>
+        <div class="input-wrap">
+            <textarea id="search"
+                      placeholder="Tapez une phrase en français… (ex: je ne sais)"
+                      autocomplete="off" spellcheck="false"></textarea>
+            <button id="clear-btn" title="Effacer">✕</button>
+        </div>
+
+        <div class="suggestions-label">Mots Suggérés</div>
+        <div id="suggestions">
+            <span class="chip-empty">Commencez à taper…</span>
+        </div>
+
+        <hr class="divider">
+
+        <div class="shortcuts-label">Exemples Rapides</div>
+        <div class="shortcuts" id="shortcuts">
+            <span class="shortcut" onclick="setTexte('je ne')">je ne</span>
+            <span class="shortcut" onclick="setTexte('tu')">tu</span>
+            <span class="shortcut" onclick="setTexte('il')">il</span>
+            <span class="shortcut" onclick="setTexte('je pense')">je pense</span>
+            <span class="shortcut" onclick="setTexte('je ne sais')">je ne sais</span>
+            <span class="shortcut" onclick="setTexte('c\'est')">c'est</span>
+            <span class="shortcut" onclick="setTexte('nous')">nous</span>
+            <span class="shortcut" onclick="setTexte('il faut')">il faut</span>
+            <span class="shortcut" onclick="setTexte('je veux')">je veux</span>
+            <span class="shortcut" onclick="setTexte('elle')">elle</span>
+        </div>
+
     </div>
 
-    <div class="suggestions-label">Mots suggérés</div>
-    <div id="suggestions">
-        <span class="chip-empty">Commencez à taper…</span>
+    <div class="stats-bar" id="stats-bar" style="display:none">
+        <div class="stat">
+            <div class="stat-value" id="stat-regles">—</div>
+            <div class="stat-label">Règles</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-algo">Apriori</div>
+            <div class="stat-label">Algorithme</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="stat-conf">10%</div>
+            <div class="stat-label">Confiance Min.</div>
+        </div>
     </div>
 
-    <hr class="divider">
-
-    <div class="shortcuts-label">Exemples rapides</div>
-    <div class="shortcuts" id="shortcuts">
-        <span class="shortcut" onclick="setTexte('je ne')">je ne</span>
-        <span class="shortcut" onclick="setTexte('tu')">tu</span>
-        <span class="shortcut" onclick="setTexte('il')">il</span>
-        <span class="shortcut" onclick="setTexte('je pense')">je pense</span>
-        <span class="shortcut" onclick="setTexte('je ne sais')">je ne sais</span>
-        <span class="shortcut" onclick="setTexte('c\'est')">c'est</span>
-        <span class="shortcut" onclick="setTexte('nous')">nous</span>
-        <span class="shortcut" onclick="setTexte('il faut')">il faut</span>
-        <span class="shortcut" onclick="setTexte('je veux')">je veux</span>
-        <span class="shortcut" onclick="setTexte('elle')">elle</span>
+    <div class="footer">
+        POWERED BY APRIORI · BIGRAMMES &amp; TRIGRAMMES ORDONNÉS
     </div>
-
-</div>
-
-<div class="stats-bar" id="stats-bar" style="display:none">
-    <div class="stat">
-        <div class="stat-value" id="stat-regles">—</div>
-        <div class="stat-label">Règles</div>
-    </div>
-    <div class="stat">
-        <div class="stat-value" id="stat-algo">Apriori</div>
-        <div class="stat-label">Algorithme</div>
-    </div>
-    <div class="stat">
-        <div class="stat-value" id="stat-conf">10%</div>
-        <div class="stat-label">Confiance min.</div>
-    </div>
-</div>
-
-<div class="footer">
-    Powered by Apriori — bigrammes &amp; trigrammes ordonnés
 </div>
 
 <script>
@@ -379,7 +494,7 @@ textarea.addEventListener('input', () => {
             const data = await res.json();
             afficherSuggestions(data);
         } catch (err) {
-            sugDiv.innerHTML = `<span class="err">⚠️ Erreur : ${err.message}. Serveur démarré ?</span>`;
+            sugDiv.innerHTML = `<span class="err">Erreur : ${err.message}. Serveur démarré ?</span>`;
         }
     }, 200);
 });
